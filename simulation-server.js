@@ -22,7 +22,6 @@ let engines = [
       temp: 85,
       oil: 40,
       fuel_rate: 20,
-      fuel_used: 0,
       total_fuel: 5000,
       battery: 13.8,
       hours: 1200,
@@ -52,7 +51,6 @@ let engines = [
       temp: 88,
       oil: 38,
       fuel_rate: 18,
-      fuel_used: 0,
       total_fuel: 5200,
       battery: 13.6,
       hours: 1250,
@@ -93,12 +91,15 @@ function updateEngines() {
     }
 
     // Fuel tracking
-    engine.data.fuel_used += engine.data.fuel_rate / 3600;
-    engine.trip.fuel_used += engine.data.fuel_rate / 3600;
+    const fuelPerSecond = engine.data.fuel_rate / 3600;
+    engine.trip.fuel_used += fuelPerSecond;
 
     // Trip tracking
     engine.trip.hours += 1 / 3600;
     engine.trip.distance += engine.data.rpm / 100000;
+
+    // Optional: reduce total fuel
+    engine.data.total_fuel -= fuelPerSecond;
 
     // Clamp values
     engine.data.rpm = Math.max(600, Math.min(4500, engine.data.rpm));
@@ -155,15 +156,19 @@ function getStatus(engine) {
   return "NORMAL";
 }
 
-// Sync calculation
+// Improved Sync calculation (scalable)
 function getSyncStatus() {
   if (engines.length < 2) return null;
 
-  const diff = Math.abs(engines[0].data.rpm - engines[1].data.rpm);
+  const baseRPM = engines[0].data.rpm;
+
+  const diffs = engines.map(e => Math.abs(e.data.rpm - baseRPM));
+
+  const maxDiff = Math.max(...diffs);
 
   return {
-    status: diff < 100 ? "SYNCED" : "UNSYNCED",
-    rpm_diff: Math.round(diff)
+    status: maxDiff < 100 ? "SYNCED" : "UNSYNCED",
+    rpm_diff: Math.round(maxDiff)
   };
 }
 
