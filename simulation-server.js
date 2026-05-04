@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use(express.json());
 
-// ✅ Engines
+// Engines
 let engines = [
   {
     id: "ENG-001",
@@ -19,7 +19,8 @@ let engines = [
       oil: 40,
       fuel_rate: 20,
       battery: 13.8,
-      hours: 1200
+      hours: 1200,
+      load: 60
     },
     faults: []
   },
@@ -35,28 +36,38 @@ let engines = [
       oil: 38,
       fuel_rate: 18,
       battery: 13.6,
-      hours: 1250
+      hours: 1250,
+      load: 55
     },
     faults: []
   }
 ];
 
-// ✅ تحديث البيانات (Simulation Loop)
+// Update simulation
 function updateEngines() {
   engines.forEach(engine => {
 
-    // Random fluctuations
-    engine.data.rpm += Math.random() * 100 - 50;
+    if (engine.state === "CRUISE") {
+      engine.data.rpm = 2800 + Math.random() * 300;
+    }
+
     engine.data.temp += Math.random() * 2 - 1;
     engine.data.oil += Math.random() * 2 - 1;
     engine.data.fuel_rate += Math.random() * 2 - 1;
 
-    // Clamp values
+    engine.data.battery += Math.random() * 0.1 - 0.05;
+
+    engine.data.load = Math.random() * 100;
+
+    if (engine.fuel === "DIESEL") {
+      engine.data.boost = Math.random() * 2 + 1;
+    }
+
     engine.data.rpm = Math.max(600, Math.min(4500, engine.data.rpm));
     engine.data.temp = Math.max(60, Math.min(110, engine.data.temp));
     engine.data.oil = Math.max(15, Math.min(60, engine.data.oil));
+    engine.data.battery = Math.max(12.5, Math.min(14.5, engine.data.battery));
 
-    // ✅ Fault Logic
     engine.faults = [];
 
     if (engine.data.temp > 95) {
@@ -80,7 +91,7 @@ function updateEngines() {
   });
 }
 
-// ✅ Health Score
+// Health score
 function getHealth(engine) {
   let score = 100;
 
@@ -88,24 +99,24 @@ function getHealth(engine) {
   if (engine.data.oil < 25) score -= 20;
   if (engine.faults.length > 0) score -= 30;
 
-  return score;
+  return Math.max(score, 0);
 }
 
-// ✅ ETF
+// Estimated time to failure
 function getETF(engine) {
   if (engine.data.temp > 95) return "14h";
   if (engine.data.oil < 25) return "10h";
   return "Stable";
 }
 
-// ✅ Status
+// Status
 function getStatus(engine) {
   if (engine.faults.some(f => f.severity === "CRITICAL")) return "CRITICAL";
   if (engine.faults.length > 0) return "WARNING";
   return "NORMAL";
 }
 
-// ✅ API Endpoint
+// API endpoint
 app.get("/api/simulation", (req, res) => {
 
   updateEngines();
@@ -117,11 +128,14 @@ app.get("/api/simulation", (req, res) => {
     temp: Math.round(engine.data.temp),
     oil: Math.round(engine.data.oil),
     fuel_rate: Math.round(engine.data.fuel_rate),
-    battery: engine.data.battery,
+    battery: parseFloat(engine.data.battery.toFixed(2)),
+    load: Math.round(engine.data.load),
+    boost: engine.data.boost ? parseFloat(engine.data.boost.toFixed(2)) : null,
     status: getStatus(engine),
     faults: engine.faults,
     health: getHealth(engine),
-    etf: getETF(engine)
+    etf: getETF(engine),
+    timestamp: new Date()
   }));
 
   res.json({
@@ -132,7 +146,7 @@ app.get("/api/simulation", (req, res) => {
 
 });
 
-// ✅ Start Server
+// Start server
 app.listen(PORT, () => {
   console.log("Simulation Server running on port " + PORT);
 });
