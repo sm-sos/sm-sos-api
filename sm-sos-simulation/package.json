@@ -1,0 +1,12 @@
+{
+  "name": "sm-sos-simulation",
+  "version": "1.0.0",
+  "main": "simulation-server.js",
+  "scripts": {
+    "start": "node simulation-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
