@@ -49,35 +49,52 @@ function getStatus(engine) {
   return "NORMAL";
 }
 
-// Root
+// ✅ Root (مهم جدًا لRailway)
 app.get("/", (req, res) => {
-  res.send("SM-SOS Simulation Running");
+  res.status(200).send("SM-SOS Simulation Running");
 });
 
-// API
+// ✅ Health check (أفضل لRailway)
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+// ✅ API
 app.get("/api/simulation", (req, res) => {
+  try {
+    console.log("Simulation API called");
 
-  updateEngines();
+    updateEngines();
 
-  const result = engines.map(engine => ({
-    position: engine.position,
-    rpm: Math.round(engine.rpm),
-    temp: Math.round(engine.temp),
-    oil: Math.round(engine.oil),
-    fuel_rate: Math.round(engine.fuel_rate),
-    battery: engine.battery,
-    status: getStatus(engine)
-  }));
+    const result = engines.map(engine => ({
+      position: engine.position,
+      rpm: Math.round(engine.rpm),
+      temp: Math.round(engine.temp),
+      oil: Math.round(engine.oil),
+      fuel_rate: Math.round(engine.fuel_rate),
+      battery: engine.battery,
+      status: getStatus(engine)
+    }));
 
-  res.json({
-    vessel: "Yacht Alpha",
-    engines: result,
-    timestamp: new Date()
-  });
+    res.status(200).json({
+      vessel: "Yacht Alpha",
+      engines: result,
+      timestamp: new Date()
+    });
 
+  } catch (error) {
+    console.error("Error in /api/simulation:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ✅ Error handler (احترافي)
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).send("Server Error");
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log("Simulation Server running on port " + PORT);
 });
