@@ -1,8 +1,10 @@
 const express = require("express");
-const app = express();
+const cors = require("cors");
 
+const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.use(cors());
 app.use(express.json());
 
 // Engines
@@ -80,7 +82,6 @@ function updateEngines() {
     engine.data.fuel_rate += Math.random() * 2 - 1;
 
     engine.data.battery += Math.random() * 0.1 - 0.05;
-
     engine.data.load = Math.random() * 100;
 
     engine.data.exhaust_temp = 300 + Math.random() * 50;
@@ -98,7 +99,7 @@ function updateEngines() {
     engine.trip.hours += 1 / 3600;
     engine.trip.distance += engine.data.rpm / 100000;
 
-    // Optional: reduce total fuel
+    // Reduce total fuel
     engine.data.total_fuel -= fuelPerSecond;
 
     // Clamp values
@@ -131,7 +132,7 @@ function updateEngines() {
   });
 }
 
-// Health score
+// Health
 function getHealth(engine) {
   let score = 100;
 
@@ -156,14 +157,12 @@ function getStatus(engine) {
   return "NORMAL";
 }
 
-// Improved Sync calculation (scalable)
+// Sync
 function getSyncStatus() {
   if (engines.length < 2) return null;
 
   const baseRPM = engines[0].data.rpm;
-
   const diffs = engines.map(e => Math.abs(e.data.rpm - baseRPM));
-
   const maxDiff = Math.max(...diffs);
 
   return {
@@ -172,7 +171,7 @@ function getSyncStatus() {
   };
 }
 
-// API endpoint
+// API
 app.get("/api/simulation", (req, res) => {
 
   updateEngines();
