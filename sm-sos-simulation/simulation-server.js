@@ -134,6 +134,7 @@ app.get("/api/simulation", (req, res) => {
 });
 
 // ============================
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, () => {
   console.log(`🚀 YDEG Simulation running on ${PORT}`);
+});
 });
