@@ -36,6 +36,20 @@ let engines = [
 ];
 
 // ============================
+// Root (for testing)
+// ============================
+app.get("/", (req, res) => {
+  res.send("✅ YDEG API Running");
+});
+
+// ============================
+// Health Check
+// ============================
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+// ============================
 // Simulate Telemetry (PGNs)
 // ============================
 function simulateTelemetry(engine) {
@@ -44,18 +58,21 @@ function simulateTelemetry(engine) {
   const load = Math.round((rpm / 4500) * 100);
 
   return {
-    pgn_127488: { // Engine Rapid
+    pgn_127488: {
+      pgn: 127488,
       rpm,
       load
     },
-    pgn_127489: { // Engine Dynamic
+    pgn_127489: {
+      pgn: 127489,
       temp: Math.round(70 + load * 0.4),
       oil: Math.round(30 + load * 0.3),
       fuel_rate: Math.round(10 + load * 0.2),
       battery: Number((13.5 + Math.random()).toFixed(2))
     },
-    pgn_127493: { // Transmission
-      gear: Math.random() > 0.5 ? "FWD" : "NEUTRAL",
+    pgn_127493: {
+      pgn: 127493,
+      gear: ["FWD", "NEUTRAL", "REV"][Math.floor(Math.random() * 3)],
       trans_temp: Math.round(40 + Math.random() * 20)
     }
   };
@@ -68,12 +85,12 @@ function simulateDiagnostics(telemetry) {
 
   let dtc = [];
 
-  // DTC (PGN 65226)
   if (telemetry.pgn_127489.temp > 95) {
     dtc.push({
       pgn: 65226,
       spn: 110,
       code: "E001",
+      severity: "CRITICAL",
       description: "Engine Over Temperature"
     });
   }
@@ -83,11 +100,11 @@ function simulateDiagnostics(telemetry) {
       pgn: 65226,
       spn: 100,
       code: "E002",
+      severity: "WARNING",
       description: "Low Oil Pressure"
     });
   }
 
-  // Engine Status Bits (24-bit simplified)
   const engine_status_bits = {
     check_engine: dtc.length > 0,
     over_temp: telemetry.pgn_127489.temp > 95,
@@ -95,7 +112,6 @@ function simulateDiagnostics(telemetry) {
     warning: dtc.length > 0
   };
 
-  // Transmission Status (5-bit simplified)
   const transmission_status = {
     warning: telemetry.pgn_127493.trans_temp > 70
   };
@@ -108,7 +124,7 @@ function simulateDiagnostics(telemetry) {
 }
 
 // ============================
-// API
+// API Endpoint
 // ============================
 app.get("/api/simulation", (req, res) => {
 
@@ -121,20 +137,26 @@ app.get("/api/simulation", (req, res) => {
       engine: engine.engine,
       identity: engine.identity,
       telemetry,
-      diagnostics
+      diagnostics,
+      timestamp: new Date().toISOString()
     };
   });
+
+  const system_status =
+    result.some(e => e.diagnostics.dtc.length > 0) ? "ALERT" : "NORMAL";
 
   res.json({
     source: "YDEG-04 Simulation",
     protocol: "NMEA2000",
+    system_status,
     engines: result,
     timestamp: new Date().toISOString()
   });
 });
 
 // ============================
+// Start Server
+// ============================
 app.listen(PORT, () => {
   console.log(`🚀 YDEG Simulation running on ${PORT}`);
-});
 });
