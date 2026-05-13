@@ -1,9 +1,19 @@
+const express = require("express");
+const app = express();
+
+app.use(express.json());
+
 app.post("/api/intake", (req, res) => {
 
-  // Generate unique request ID
+  if (!req.body.engine_id || !req.body.service_type) {
+    return res.status(400).json({
+      status: "error",
+      message: "Missing required fields"
+    });
+  }
+
   const requestId = "INT-" + Date.now();
 
-  // Build structured request data
   const data = {
     request_id: requestId,
     engine_id: req.body.engine_id,
@@ -16,12 +26,14 @@ app.post("/api/intake", (req, res) => {
     created_at: new Date().toISOString()
   };
 
-  // Log incoming request
   console.log("Incoming Request:", data);
 
-  // Send response
   res.json({
     status: "success",
     request_id: requestId
   });
+});
+
+app.listen(8080, () => {
+  console.log("Server running on port 8080");
 });
