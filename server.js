@@ -3,13 +3,39 @@ const app = express();
 
 app.use(express.json());
 
-// Webhook endpoint
+console.log("VERSION FINAL RUNNING");
+
 app.post("/api/intake", (req, res) => {
-  console.log("Incoming Request:", req.body);
-  res.status(200).json({ status: "received" });
+
+  if (!req.body.engine_id || !req.body.service_type) {
+    return res.status(400).json({
+      status: "error",
+      message: "Missing required fields"
+    });
+  }
+
+  const requestId = "INT-" + Date.now();
+
+  const data = {
+    request_id: requestId,
+    engine_id: req.body.engine_id,
+    service_type: req.body.service_type,
+    asset_type: req.body.asset_type,
+    full_name: req.body.full_name,
+    email: req.body.email,
+    mobile: req.body.mobile,
+    message: req.body.message,
+    created_at: new Date().toISOString()
+  };
+
+  console.log("Final Request:", data);
+
+  res.json({
+    status: "success",
+    request_id: requestId
+  });
 });
 
-// Health check
 app.get("/", (req, res) => {
   res.send("SM-SOS API Running");
 });
